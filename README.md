@@ -9,3 +9,6 @@ Discord bot for our discord server needs
 
 ## Useful urls
  - [Discord Dev dashboard](https://discord.com/developers/applications)
+ - [Discord node documentation](https://discordjs.guide/creating-your-bot/#creating-the-bot-file)
+ 
+ 
