@@ -12,3 +12,6 @@ Discord bot for our discord server needs
  - [Discord node documentation](https://discordjs.guide/creating-your-bot/#creating-the-bot-file)
  
  
+## To install
+ - Node
+ - npm install discord.js ffmpeg fluent-ffmpeg @discordjs/opus ytdl-core --save
