@@ -42,8 +42,10 @@ client.on("message", function(message) {
     message.channel.send(saymsg);
   }
 
-
   
+
+
+
 
 
 
