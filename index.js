@@ -85,11 +85,9 @@ client.on("message", async message => {
         case "decide":{ //play command. adds to queue the music, if found.
             let randomvars = args;
             randomvars.shift();
-            randomvars.shift();
-            let maxval = args.length + 1;
+            let maxval = args.length;
             let random = Math.floor(Math.random() * maxval) + 1;
-
-            message.channel.send("I would say " + randomvars[random]);
+            message.channel.send("I would say " + randomvars[random-1]);
             
             break;
         }
