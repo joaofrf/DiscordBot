@@ -2,7 +2,7 @@
 const Discord = require("discord.js");
 const config = require("./config.json");
 const ytdl = require('ytdl-core');
-//const ytSearch = require('yt-search');
+const ytSearch = require('yt-search');
 
 // Bot settings
 const client = new Discord.Client();
@@ -12,8 +12,8 @@ const queue = new Map(); // music queue
 
 
 client.once('ready', () => {
-	console.log('Bot Started With Success!');
-	console.log('_________________________');
+    console.log('Bot Started With Success!');
+    console.log('_________________________');
 });
 
 client.once('reconnecting', () => {
@@ -37,24 +37,25 @@ client.on("message", async message => {
     const command = args[0].toLowerCase();
     const serverQueue = queue.get(message.guild.id);
 
-	/*
+    /*
       console.log("body:");
       console.log(commandBody); //say balshit monte
       console.log("args:");
       console.log(args); // [ 'say', 'balshit', 'monte' ]
       console.log("command:");
       console.log(command); // say
-	*/
+    */
+
+    
 
     //Commands inside Switch statement with { } for better reading.
     switch(command) {
         case "say":{ //Say command. Says whatever was said after "prefix say"
             var i;
-
             let saymsg = "";
 
             for (i = 1; i < args.length; i++) {
-               saymsg += args[i] + " ";
+                saymsg += args[i] + " ";
             }
 
             message.channel.send(saymsg);
@@ -77,8 +78,30 @@ client.on("message", async message => {
             volume(message, serverQueue);
             break;
         }
+        case "queue":{ //play command. adds to queue the music, if found.
+            queuelist(message, serverQueue);
+            break;
+        }
+        case "decide":{ //play command. adds to queue the music, if found.
+            let randomvars = args;
+            randomvars.shift();
+            randomvars.shift();
+            let maxval = args.length + 1;
+            let random = Math.floor(Math.random() * maxval) + 1;
+
+            message.channel.send("I would say " + randomvars[random]);
+            
+            break;
+        }
+        case "commands":{ //play command. adds to queue the music, if found.
+            let msg = "``` \n say \n play \n skip \n stop \n volume (1 - 100) \n queue \n decide \n ```";
+
+            message.channel.send(msg);
+            
+            break;
+        }
         default:{
-            return message.channel.send("Wtf is that command u stupid?");
+            return message.channel.send("Wtf is that command u stupid? use commands to check my commands");
         }
         
     }
@@ -98,18 +121,28 @@ async function execute(message, serverQueue) {
         return message.channel.send("Someone took my permissions... I need CONNECT and SPEAK to play music");
     }
 
-    //check if in a voice room
 
-    
-/*
-    if(serverQueue){ // se já houver uma queue para o server mas o bot levou disconnect
-        console.log("devia estar numa sala!");
-        console.dir(serverQueue);
+    let songInfo;
+
+    if(args[2].includes("www.youtube.com/watch?v=")){
+        songInfo = await ytdl.getInfo(args[2]);
     }else{
-        console.log("Não há queue!");
-    }*/
+        
+        let saymsg = "";
 
-    const songInfo = await ytdl.getInfo(args[2]);
+        for (i = 2; i < args.length; i++) {
+           saymsg += args[i] + " ";
+        }
+
+        const r = await ytSearch(saymsg);
+        if(r.all){
+            songInfo = await ytdl.getInfo(r.all[0].url);
+        }
+
+    }
+
+
+     
 
     const song = {
         title: songInfo.videoDetails.title,
@@ -213,6 +246,24 @@ function volume(message, serverQueue){
     serverQueue.connection.dispatcher.setVolumeLogarithmic(serverQueue.volume);
 
     serverQueue.textChannel.send(`Volume changed to ${newVolume}%`);
+}
+
+function queuelist(message, serverQueue) {
+    
+    let msg = "```";
+
+    for (var i = 0; i < serverQueue.songs.length; i++) {
+        if(i == 0){
+            msg += "\n" + serverQueue.songs[i].title + " -----> (Currently playing)";
+            continue;
+        }
+        msg += "\n" + serverQueue.songs[i].title;
+    }
+
+    msg += "\n```";
+
+    return message.channel.send(msg);
+  
 }
 
 client.on("voiceStateUpdate", (oldVoiceState, newVoiceState) => { // Listeing to the voiceStateUpdate event
