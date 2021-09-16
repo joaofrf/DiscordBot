@@ -5,7 +5,7 @@ const ytdl = require('ytdl-core');
 const ytSearch = require('yt-search');
 
 // Bot settings
-const client = new Discord.Client();
+const client = new Discord.Client({ intents: ["GUILDS"] });
 client.login(config.BOT_TOKEN);
 const prefix = config.PREFIX;
 const queue = new Map(); // music queue
@@ -13,6 +13,7 @@ const queue = new Map(); // music queue
 
 client.once('ready', () => {
     console.log('Bot Started With Success!');
+    console.log('prefix is ' + prefix);
     console.log('_________________________');
 });
 
@@ -25,7 +26,7 @@ client.once('disconnect', () => {
 });
 
 client.on("message", async message => {
-
+    
     //if message is from bot or message does not start with prefix -> ignore
     if (message.author.bot || !message.content.startsWith(prefix)){
         return;
@@ -45,8 +46,6 @@ client.on("message", async message => {
       console.log("command:");
       console.log(command); // say
     */
-
-    
 
     //Commands inside Switch statement with { } for better reading.
     switch(command) {
@@ -122,13 +121,13 @@ async function execute(message, serverQueue) {
 
     let songInfo;
 
-    if(args[2].includes("www.youtube.com/watch?v=")){
-        songInfo = await ytdl.getInfo(args[2]);
+    if(args[1].includes("www.youtube.com/watch?v=")){
+        songInfo = await ytdl.getInfo(args[1]);
     }else{
         
         let saymsg = "";
 
-        for (i = 2; i < args.length; i++) {
+        for (i = 1; i < args.length; i++) {
            saymsg += args[i] + " ";
         }
 
@@ -187,9 +186,12 @@ function skip(message, serverQueue) {
     return message.channel.send("No song is playing!");
   }
 
-
+  serverQueue.songs.shift();
+  play(message.guild, serverQueue.songs[0]);
+/*
   message.channel.send("No song in queue, leaving...");
   serverQueue.connection.dispatcher.end();
+*/
 }
 
 function stop(message, serverQueue) {
