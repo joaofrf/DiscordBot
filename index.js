@@ -3,13 +3,16 @@ const Discord = require("discord.js");
 const config = require("./config.json");
 const ytdl = require('ytdl-core');
 const ytSearch = require('yt-search');
+const { exec } = require("ffmpeg/lib/utils");
+
+const QuadrasDoTji = require("./QuadrasDoTji.json");
 
 // Bot settings
 const client = new Discord.Client({ intents: ["GUILDS"] });
 client.login(config.BOT_TOKEN);
 const prefix = config.PREFIX;
 const queue = new Map(); // music queue
-
+let MandarMadonisComOCaralho = false;
 
 client.once('ready', () => {
     console.log('Bot Started With Success!');
@@ -23,6 +26,16 @@ client.once('reconnecting', () => {
 
 client.once('disconnect', () => {
  console.log('Bot disconnected...');
+});
+
+client.on('guildMemberRemove', async(member) => {
+    if(member == left){
+        console.log(member.user.tag + "left the server")
+    }else if(member == kicked){
+        console.log(member.user.tag + "got kicked from the server the server bacause, "+reason)
+    }else if(member == banned){
+        console.log(member.user.tag + "got banned from the server the server bacause, "+reason)
+    }
 });
 
 client.on("message", async message => {
@@ -63,6 +76,14 @@ client.on("message", async message => {
         }
         case "play":{ //play command. adds to queue the music, if found.
             execute(message, serverQueue);
+            break;
+        }
+        case "andacacaralho":{ //enters the server.
+            JoinVoiceChat(message);
+            break;
+        }
+        case "madonis":{ //play command. adds to queue the music, if found.
+            MandarMadonisComOCaralho = !MandarMadonisComOCaralho;
             break;
         }
         case "skip":{ //play command. adds to queue the music, if found.
@@ -177,6 +198,18 @@ async function execute(message, serverQueue) {
     }
 }
 
+async function JoinVoiceChat(message) {
+
+    const voiceChannel = message.member.voice.channel;
+    if (!voiceChannel){
+        return message.channel.send("Join a voice channel first!");
+    }
+    try {
+        var connection = await voiceChannel.join();
+    } catch (err) {
+    }
+}
+
 function skip(message, serverQueue) {
   if (!message.member.voice.channel){
     return message.channel.send("You have to be in my voice channel to skip the music!");
@@ -232,47 +265,119 @@ function play(guild, song) {
 }
 
 function volume(message, serverQueue){
-    const args = message.content.slice(prefix.length).split(' ');
+    try {
+        const args = message.content.slice(prefix.length).split(' ');
 
-    let newVolume = args[1];
+        let newVolume = args[1];
 
-    if(newVolume > 100 && newVolume <= 0){
-        return message.channel.send("Volume must be between 1 and 100");
+        if(newVolume > 100 && newVolume <= 0){
+            return message.channel.send("Volume must be between 1 and 100");
+        }
+
+
+        serverQueue.volume = newVolume / 100;
+
+        serverQueue.connection.dispatcher.setVolumeLogarithmic(serverQueue.volume);
+
+        serverQueue.textChannel.send(`Volume changed to ${newVolume}%`);
+    } catch (error) {
+        return;
     }
-
-
-    serverQueue.volume = newVolume / 100;
-
-    serverQueue.connection.dispatcher.setVolumeLogarithmic(serverQueue.volume);
-
-    serverQueue.textChannel.send(`Volume changed to ${newVolume}%`);
 }
 
 function queuelist(message, serverQueue) {
-    
-    let msg = "```";
+    try {
+        let msg = "```";
 
-    for (var i = 0; i < serverQueue.songs.length; i++) {
-        if(i == 0){
-            msg += "\n" + serverQueue.songs[i].title + " -----> (Currently playing)";
-            continue;
+        for (var i = 0; i < serverQueue.songs.length; i++) {
+            if(i == 0){
+                msg += "\n" + serverQueue.songs[i].title + " -----> (Currently playing)";
+                continue;
+            }
+            msg += "\n" + serverQueue.songs[i].title;
         }
-        msg += "\n" + serverQueue.songs[i].title;
+
+        msg += "\n```";
+
+        return message.channel.send(msg);
+    } catch (error) {
+        return null;
     }
-
-    msg += "\n```";
-
-    return message.channel.send(msg);
+    
   
 }
 
-client.on("voiceStateUpdate", (oldVoiceState, newVoiceState) => { // Listeing to the voiceStateUpdate event
+//get a random number between variables parameters
+function getRandomInt(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+client.on("voiceStateUpdate", async (oldVoiceState, newVoiceState) => { // Listening to the voiceStateUpdate event
     const serverQueue = queue.get(oldVoiceState.guild.id);
     if (oldVoiceState.channel) { 
         if(oldVoiceState.member.user.tag === "MahallaBot#5373"){ //this bot was disconnected
             queue.delete(oldVoiceState.guild.id)
         }
     };
+    
+    try {
+        if (newVoiceState.channel === null) {
+            if (!oldVoiceState.guild.me.hasPermission('VIEW_AUDIT_LOG'))
+                return console.log('Missing permission: "VIEW_AUDIT_LOG"');
+    
+            const fetchedLogs = await oldVoiceState.guild.fetchAuditLogs({
+                type: 'MEMBER_DISCONNECT'
+            });
 
+            var LastDC = fetchedLogs.entries.sort((a, b) => b.createdAt - a.createdAt).first();
 
+            // console.dir(LastDC);
+    
+            const { executor } = LastDC;
+            
+            var AuditDate = LastDC.createdAt;
+
+            console.log("AuditDate " + AuditDate);
+
+            var diff = Date.now() - AuditDate;
+
+            if(diff > 7500)
+                return;
+
+            if(executor.tag === "MahallaBot#5373" || executor.id === "452275672757436436")
+                return;
+
+            
+
+            console.log(`<@${executor.id}>(@${executor.username})  Disconnected <@${oldVoiceState.id}>(${oldVoiceState.member.user.username})`);
+    
+            var UserToDisconnect = oldVoiceState.guild.voiceStates.cache.get(executor.id);
+
+            if(UserToDisconnect !== undefined){
+                UserToDisconnect.setChannel(null, "Mandou uma pessoa com o caralho também.");
+
+                console.log("A mandar o " + UserToDisconnect.member.displayName + " com o caralho");
+
+                
+                var NumQuadra = getRandomInt(0, QuadrasDoTji.quadras.length - 1);
+                client.channels.cache.get(`925162059753205850`).send(`O <@${UserToDisconnect.member.id}> foi com o caralho.`);
+                
+                client.channels.cache.get(`925162059753205850`).send(QuadrasDoTji.quadras[NumQuadra]);
+            }
+
+        }else{
+            console.log(newVoiceState.member.user.id + " | " + MandarMadonisComOCaralho);
+            if(newVoiceState.member.user.id+"" === '183249276598484992' && MandarMadonisComOCaralho){
+                var UserToDisconnect = newVoiceState.guild.voiceStates.cache.get('183249276598484992');
+                UserToDisconnect.setChannel(null, "É o madonis. Não merece estar aqui.");
+
+                client.channels.cache.get(`925162059753205850`).send(`Madonis do caralho seu fdp, não me voltas a kickar do servidor.`);
+            }
+        }
+    } catch (error) {
+        console.log(error);
+    }
+    
 });
